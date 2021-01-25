@@ -27,6 +27,12 @@ public class ParcelerviceImpl implements ParcelService {
   private ParcelRepository parcelDao;
 
   @Override
+  public Collection<ParcelResponse> getAllParcels() {
+    return this.parcelDao.findAll().stream().map(ParcelerviceImpl::entityToDto)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public Collection<LabelResponse> getAllLabels() {
     return this.labelDao.findAll().stream().map(ParcelerviceImpl::entityToDto)
         .collect(Collectors.toList());
@@ -54,6 +60,12 @@ public class ParcelerviceImpl implements ParcelService {
     parcel.setLabelId(labelDto.getId());
 
     return entityToDto(this.parcelDao.save(parcel));
+  }
+
+  @Override
+  public ParcelResponse getParcelForParcels(final Long parcelId) throws ParcelNotFoundException {
+    return this.parcelDao.findById(parcelId).map(ParcelerviceImpl::entityToDto)
+        .orElseThrow(ParcelNotFoundException::new);
   }
 
   @Override

@@ -12,7 +12,11 @@ public interface ParcelService {
 
   Collection<LabelResponse> getAllLabels();
 
+  Collection<ParcelResponse> getAllParcels();
+
   LabelResponse getLabel(Long labelId) throws LabelNotFoundException;
+
+  ParcelResponse getParcelForParcels(Long parcelId) throws ParcelNotFoundException;
 
   ParcelResponse getParcel(Long labelId) throws ParcelNotFoundException;
 

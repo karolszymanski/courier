@@ -11,8 +11,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder.BCryptVersion;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm;
 
 @Configuration
 @EnableWebSecurity
@@ -35,10 +33,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder(BCryptVersion.$2B, 12);
-  }
-
-  public static void main(String[] args) {
-    System.out.println(new SecurityConfig().passwordEncoder().matches("janjanjan", "$2b$12$cGTYrodcscFZndtOEJyySOBcBqXsmgUPuXnALf7azgWM2pdRtWFWe"));
   }
 
 }

@@ -6,7 +6,7 @@ import javax.persistence.Table;
 import org.hibernate.annotations.Immutable;
 
 @Entity
-@Table(name = "users")
+@Table(name = "couriers")
 @Immutable
 public class User {
 
@@ -18,8 +18,6 @@ public class User {
   private String surname;
 
   private String login;
-
-  private String email;
 
   private String password;
 
@@ -37,10 +35,6 @@ public class User {
 
   public String getLogin() {
     return login;
-  }
-
-  public String getEmail() {
-    return email;
   }
 
   public String getPassword() {
