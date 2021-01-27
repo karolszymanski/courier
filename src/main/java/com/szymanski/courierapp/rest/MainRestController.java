@@ -40,6 +40,23 @@ public class MainRestController {
   @Autowired
   private SimpMessagingTemplate messagingTemplate;
 
+  @GetMapping(value = "/parcels", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Collection<ParcelResponse>> listAllParcels() {
+    final Collection<ParcelResponse> parcels = this.parcelService.getAllParcels();
+    for (final ParcelResponse parcel : parcels) {
+      final Link selfLink = WebMvcLinkBuilder
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(parcel.getId()))
+          .withSelfRel();
+      parcel.add(selfLink);
+
+      final Link parcelLink = WebMvcLinkBuilder
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(parcel.getId()))
+          .withRel("parcel");
+      parcel.add(parcelLink);
+    }
+    return ResponseEntity.ok(parcels);
+  }
+
   @GetMapping(value = "/labels", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Collection<LabelResponse>> listAllLabels() {
     final Collection<LabelResponse> labels = this.parcelService.getAllLabels();
