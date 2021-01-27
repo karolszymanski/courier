@@ -11,8 +11,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder.BCryptVersion;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
-import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder.SecretKeyFactoryAlgorithm;
 
 @Configuration
 @EnableWebSecurity
@@ -23,8 +21,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
-    http.authorizeRequests().anyRequest().authenticated().and().httpBasic();
-    http.csrf().disable().headers().frameOptions().disable();
+    http.httpBasic().and().authorizeRequests().anyRequest().authenticated().and().formLogin();
+
+    http.csrf().disable();
+    http.headers().frameOptions().disable();
   }
 
   @Override
@@ -38,7 +38,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
   }
 
   public static void main(String[] args) {
-    System.out.println(new SecurityConfig().passwordEncoder().matches("janjanjan", "$2b$12$cGTYrodcscFZndtOEJyySOBcBqXsmgUPuXnALf7azgWM2pdRtWFWe"));
+    System.out.println(new SecurityConfig().passwordEncoder().encode("user"));
   }
-
 }

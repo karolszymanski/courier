@@ -1,5 +1,6 @@
 package com.szymanski.courierapp.rest;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,28 +25,32 @@ import com.szymanski.courierapp.exception.ParcelNotFoundException;
 import com.szymanski.courierapp.model.LabelResponse;
 import com.szymanski.courierapp.model.ParcelResponse;
 import com.szymanski.courierapp.model.ParcelStatus;
+import com.szymanski.courierapp.model.ws.Notification;
 import com.szymanski.courierapp.service.ParcelService;
 
 @RestController
 @RequestMapping(path = "/rest/v1")
-public class MainController {
+public class MainRestController {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MainController.class);
+  private static final Logger LOG = LoggerFactory.getLogger(MainRestController.class);
 
   @Autowired
   private ParcelService parcelService;
+
+  @Autowired
+  private SimpMessagingTemplate messagingTemplate;
 
   @GetMapping(value = "/labels", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<Collection<LabelResponse>> listAllLabels() {
     final Collection<LabelResponse> labels = this.parcelService.getAllLabels();
     for (final LabelResponse label : labels) {
       final Link selfLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(label.getId()))
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(label.getId()))
           .withSelfRel();
       label.add(selfLink);
 
       final Link parcelLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getParcel(label.getId()))
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(label.getId()))
           .withRel("parcel");
       label.add(parcelLink);
     }
@@ -56,19 +62,19 @@ public class MainController {
     try {
       final LabelResponse label = this.parcelService.getLabel(labelId);
       final Link selfLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(label.getId()))
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(label.getId()))
           .withSelfRel();
       label.add(selfLink);
 
 
       final Link parcelLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getParcel(label.getId()))
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(label.getId()))
           .withRel("parcel");
       label.add(parcelLink);
 
-      final Link labelsLink =
-          WebMvcLinkBuilder.linkTo(WebMvcLinkBuilder.methodOn(MainController.class).listAllLabels())
-              .withRel("labels");
+      final Link labelsLink = WebMvcLinkBuilder
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).listAllLabels())
+          .withRel("labels");
       label.add(labelsLink);
 
       return ResponseEntity.ok(label);
@@ -84,12 +90,14 @@ public class MainController {
       final ParcelResponse parcel = this.parcelService.getParcel(labelId);
 
       final Link selfLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getParcel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(parcel.getLabelId()))
           .withSelfRel();
       parcel.add(selfLink);
 
       final Link labelLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(parcel.getLabelId()))
           .withRel("label");
       parcel.add(labelLink);
 
@@ -107,14 +115,27 @@ public class MainController {
       final ParcelResponse parcel = this.parcelService.create(labelId);
 
       final Link selfLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getParcel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(parcel.getLabelId()))
           .withSelfRel();
       parcel.add(selfLink);
 
       final Link labelLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(parcel.getLabelId()))
           .withRel("label");
       parcel.add(labelLink);
+
+      final LabelResponse label = this.parcelService.getLabel(labelId);
+
+      final Notification notif = new Notification();
+      notif.setReceiver(label.getReceiver());
+      notif.setTimestamp(LocalDateTime.now());
+      notif.setSender("A bo ja wiem kto");
+      notif.setText("Paczka " + label.getId() + " utworzona");
+
+      this.messagingTemplate.convertAndSendToUser(notif.getReceiver(), "/queue/notifications",
+          notif);
 
       return ResponseEntity.ok(parcel);
     } catch (final LabelNotFoundException e) {
@@ -124,8 +145,8 @@ public class MainController {
       LOG.error("Parcel with id {} already exists", labelId);
 
       final String href = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(labelId)).withSelfRel()
-          .getHref();
+          .linkTo(WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(labelId))
+          .withSelfRel().getHref();
 
       return ResponseEntity.status(HttpStatus.CONFLICT).header(HttpHeaders.LOCATION, href).build();
     }
@@ -145,12 +166,14 @@ public class MainController {
       final ParcelResponse parcel = this.parcelService.changeStatus(labelId, parcelStatus);
 
       final Link selfLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getParcel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getParcel(parcel.getLabelId()))
           .withSelfRel();
       parcel.add(selfLink);
 
       final Link labelLink = WebMvcLinkBuilder
-          .linkTo(WebMvcLinkBuilder.methodOn(MainController.class).getLabel(parcel.getLabelId()))
+          .linkTo(
+              WebMvcLinkBuilder.methodOn(MainRestController.class).getLabel(parcel.getLabelId()))
           .withRel("label");
       parcel.add(labelLink);
 
@@ -159,7 +182,6 @@ public class MainController {
       LOG.error("Parcel with label id {} not found", labelId);
       return ResponseEntity.badRequest().build();
     }
-
   }
 
   private static ParcelStatus toStatus(final String status) {
